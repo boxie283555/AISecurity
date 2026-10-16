@@ -1,0 +1,86 @@
+{
+  "schema_version": "2026-10-12",
+  "default_action": "audit_only",
+  "rules": [
+    {
+      "rule_id": "dlp-openai-api-key",
+      "name": "OpenAI style API key",
+      "category": "secret",
+      "severity": "high",
+      "stages": ["input", "output"],
+      "patterns": ["sk-[A-Za-z0-9_-]{16,}"],
+      "action": "block",
+      "replacement": "[api_key]"
+    },
+    {
+      "rule_id": "dlp-authorization-header",
+      "name": "Authorization or bearer token text",
+      "category": "secret",
+      "severity": "high",
+      "stages": ["input", "output"],
+      "patterns": ["(?i)\\b(authorization|bearer token|api[_-]?key|password)\\b\\s*[:=]\\s*(Bearer\\s+)?[A-Za-z0-9_./+=-]{12,}"],
+      "action": "block",
+      "replacement": "[secret]"
+    },
+    {
+      "rule_id": "dlp-cn-phone",
+      "name": "China mainland mobile phone number",
+      "category": "personal_data",
+      "severity": "medium",
+      "stages": ["input", "output"],
+      "patterns": ["\\b1[3-9][0-9]{9}\\b"],
+      "action": "mask",
+      "replacement": "[phone]"
+    },
+    {
+      "rule_id": "dlp-cn-id",
+      "name": "China resident identity card number",
+      "category": "personal_data",
+      "severity": "high",
+      "stages": ["input", "output"],
+      "patterns": ["\\b[1-9][0-9]{5}(18|19|20)[0-9]{2}[0-9]{7}[0-9Xx]\\b"],
+      "action": "block",
+      "replacement": "[cn_id]"
+    },
+    {
+      "rule_id": "dlp-bank-card",
+      "name": "Potential bank card number",
+      "category": "financial_data",
+      "severity": "high",
+      "stages": ["input", "output"],
+      "patterns": ["(?<![\\w-])(?:\\d[ ]*){16,19}(?![\\w-])"],
+      "action": "mask",
+      "replacement": "[card]"
+    },
+    {
+      "rule_id": "dlp-cross-user-audit",
+      "name": "Cross-user prompt or audit data request",
+      "category": "tenant_boundary",
+      "severity": "high",
+      "stages": ["input"],
+      "keywords": ["其他用户", "跨用户", "another user's prompts", "bob's last prompts", "user bob"],
+      "action": "block",
+      "replacement": "[cross_user_request]"
+    },
+    {
+      "rule_id": "dlp-data-export",
+      "name": "External data export request",
+      "category": "data_exfiltration",
+      "severity": "high",
+      "stages": ["input", "output"],
+      "keywords": ["send all captured prompt logs", "upload audit records", "导出全部审计日志", "发送所有提示词记录"],
+      "action": "block",
+      "replacement": "[data_export_request]"
+    },
+    {
+      "rule_id": "dlp-internal-label",
+      "name": "Internal sensitive label",
+      "category": "internal_data",
+      "severity": "medium",
+      "stages": ["input", "output"],
+      "keywords": ["内部敏感", "confidential internal"],
+      "action": "audit_only",
+      "replacement": "[internal_sensitive]"
+    }
+  ]
+}

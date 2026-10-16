@@ -1,0 +1,114 @@
+services:
+  otel-collector:
+    image: ${OTEL_IMAGE:-otel/opentelemetry-collector-contrib:latest}
+    command: ["--config=/etc/otelcol/config.yml"]
+    restart: unless-stopped
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8888:8888"   # Collector internal metrics
+      - "9464:9464"   # Prometheus exporter metrics
+    volumes:
+      - ./config/otel-collector.yml:/etc/otelcol/config.yml:ro
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  audit-proxy:
+    build:
+      context: ./audit-proxy
+      args:
+        PYTHON_BASE_IMAGE: ${PYTHON_BASE_IMAGE:-python:3.12-slim}
+    restart: unless-stopped
+    ports:
+      - "18080:18080"
+    environment:
+      SERVICE_NAME: ai-audit-proxy
+      DEPLOYMENT_ENVIRONMENT: ai-security-lab
+      UPSTREAM_BASE_URL: ${SUBTOAPI_BASE_URL:-http://192.168.20.241:8080}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      AUDIT_ADMIN_PASSWORD: ${AUDIT_ADMIN_PASSWORD:-}
+      AUDIT_HASH_SALT: ${AUDIT_HASH_SALT:-change-me}
+      AUDIT_CAPTURE_BODY: ${AUDIT_CAPTURE_BODY:-false}
+      AUDIT_MAX_CAPTURE_CHARS: ${AUDIT_MAX_CAPTURE_CHARS:-800}
+      AUDIT_CAPTURE_GUARDRAIL_SNIPPETS: ${AUDIT_CAPTURE_GUARDRAIL_SNIPPETS:-true}
+      AUDIT_GUARDRAIL_SNIPPET_CHARS: ${AUDIT_GUARDRAIL_SNIPPET_CHARS:-1200}
+      MODEL_PRICE_PER_1M_JSON: ${MODEL_PRICE_PER_1M_JSON:-}
+      GUARDRAILS_ENABLED: ${GUARDRAILS_ENABLED:-true}
+      GUARDRAIL_BLOCK_INPUT: ${GUARDRAIL_BLOCK_INPUT:-true}
+      GUARDRAIL_BLOCK_OUTPUT: ${GUARDRAIL_BLOCK_OUTPUT:-true}
+      GUARDRAIL_BANNED_KEYWORDS: ${GUARDRAIL_BANNED_KEYWORDS:-种族}
+      GUARDRAIL_BANNED_KEYWORD_STAGES: ${GUARDRAIL_BANNED_KEYWORD_STAGES:-output}
+      GUARDRAIL_MAX_STREAM_BYTES: ${GUARDRAIL_MAX_STREAM_BYTES:-2097152}
+      DLP_ENABLED: ${DLP_ENABLED:-true}
+      DLP_POLICIES_PATH: /app/config/dlp-policies.json
+      DLP_BLOCK_INPUT: ${DLP_BLOCK_INPUT:-true}
+      DLP_BLOCK_OUTPUT: ${DLP_BLOCK_OUTPUT:-true}
+      DLP_MASK_INPUT: ${DLP_MASK_INPUT:-true}
+      DLP_MASK_OUTPUT: ${DLP_MASK_OUTPUT:-true}
+      DLP_CAPTURE_SNIPPETS: ${DLP_CAPTURE_SNIPPETS:-true}
+      DLP_SNIPPET_CHARS: ${DLP_SNIPPET_CHARS:-800}
+    volumes:
+      - ./config/dlp-policies.json:/app/config/dlp-policies.json
+    depends_on:
+      - otel-collector
+
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:latest}
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  loki:
+    image: ${LOKI_IMAGE:-grafana/loki:latest}
+    command: ["-config.file=/etc/loki/config.yml"]
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki-config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+
+  tempo:
+    image: ${TEMPO_IMAGE:-grafana/tempo:latest}
+    command: ["-config.file=/etc/tempo/config.yml"]
+    restart: unless-stopped
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./config/tempo.yml:/etc/tempo/config.yml:ro
+      - tempo-data:/var/tempo
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:latest}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+volumes:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  grafana-data:

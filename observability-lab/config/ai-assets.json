@@ -1,0 +1,120 @@
+{
+  "schema_version": "2026-10-12",
+  "environment": "ai-security-lab",
+  "apps": [
+    {
+      "asset_id": "app-codex",
+      "name": "Codex Desktop",
+      "owner": "ai-platform",
+      "department": "lab",
+      "business_purpose": "AI coding assistant experiment",
+      "risk_level": "medium",
+      "status": "active",
+      "gateway": "audit-proxy",
+      "default_model": "gpt-5.5"
+    },
+    {
+      "asset_id": "app-ccswitch",
+      "name": "CCSwitch",
+      "owner": "ai-platform",
+      "department": "lab",
+      "business_purpose": "Local provider switch and client proxy",
+      "risk_level": "medium",
+      "status": "active",
+      "gateway": "audit-proxy"
+    }
+  ],
+  "models": [
+    {
+      "asset_id": "model-gpt-5-5",
+      "name": "gpt-5.5",
+      "owner": "ai-platform",
+      "provider": "Unity-AI / SubToAPI",
+      "deployment_type": "external_proxy",
+      "data_region": "unknown",
+      "purpose": "External LLM model used through SubToAPI for lab AI requests",
+      "risk_level": "high",
+      "status": "active",
+      "approved_for": [
+        "lab",
+        "coding_assistant"
+      ],
+      "requires_eval_before_production": true
+    }
+  ],
+  "gateways": [
+    {
+      "asset_id": "gateway-audit-proxy",
+      "name": "AI Audit Proxy",
+      "owner": "ai-platform",
+      "base_url": "http://192.168.20.170:18080",
+      "upstream": "http://192.168.20.241:8080",
+      "purpose": "Central audit and guardrail proxy for AI API traffic",
+      "risk_level": "high",
+      "status": "active",
+      "controls": [
+        "audit_log",
+        "token_usage",
+        "guardrail",
+        "otel",
+        "loki",
+        "prometheus",
+        "tempo"
+      ]
+    },
+    {
+      "asset_id": "gateway-subtoapi",
+      "name": "SubToAPI / Unity-AI",
+      "owner": "ai-platform",
+      "base_url": "http://192.168.20.241:8080",
+      "purpose": "Upstream model routing and provider key management gateway",
+      "risk_level": "high",
+      "status": "active",
+      "controls": [
+        "model_route",
+        "provider_key_management"
+      ]
+    }
+  ],
+  "data_sources": [
+    {
+      "asset_id": "data-codex-workspace",
+      "name": "Codex workspace files",
+      "owner": "lab-user",
+      "purpose": "Files reachable by Codex during lab work",
+      "classification": "internal",
+      "contains_personal_data": false,
+      "risk_level": "medium",
+      "status": "active"
+    },
+    {
+      "asset_id": "data-prompt-logs",
+      "name": "Captured prompt and response audit logs",
+      "owner": "ai-platform",
+      "purpose": "Sensitive audit evidence for prompts, responses and guardrail events",
+      "classification": "sensitive_audit",
+      "contains_personal_data": "possible",
+      "risk_level": "high",
+      "status": "active",
+      "storage": "Loki"
+    }
+  ],
+  "tools": [
+    {
+      "asset_id": "tool-grafana",
+      "name": "Grafana",
+      "owner": "ai-platform",
+      "purpose": "Dashboard, alerting, reporting",
+      "risk_level": "medium",
+      "status": "active"
+    },
+    {
+      "asset_id": "tool-loki",
+      "name": "Loki",
+      "owner": "ai-platform",
+      "purpose": "Audit log storage",
+      "risk_level": "high",
+      "status": "active"
+    }
+  ]
+}

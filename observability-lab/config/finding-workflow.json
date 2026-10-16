@@ -1,0 +1,82 @@
+{
+  "schema_version": "2026-10-12",
+  "workflow_name": "AI risk finding remediation workflow",
+  "statuses": [
+    {
+      "status": "open",
+      "meaning": "Risk was automatically created from a failed model evaluation.",
+      "next": ["assigned", "accepted_risk", "false_positive"]
+    },
+    {
+      "status": "assigned",
+      "meaning": "Risk owner has been assigned and remediation is expected by the due date.",
+      "next": ["investigating", "fixed", "accepted_risk"]
+    },
+    {
+      "status": "investigating",
+      "meaning": "Owner is analysing cause, impact, and required control changes.",
+      "next": ["fixed", "accepted_risk", "false_positive"]
+    },
+    {
+      "status": "fixed",
+      "meaning": "Owner says controls were changed and the finding needs retest.",
+      "next": ["retest_requested", "reopened"]
+    },
+    {
+      "status": "retest_requested",
+      "meaning": "A retest run is required for the same case or finding id.",
+      "next": ["retest_passed", "reopened"]
+    },
+    {
+      "status": "retest_passed",
+      "meaning": "Retest evidence passed and closure review can start.",
+      "next": ["closed", "reopened"]
+    },
+    {
+      "status": "closed",
+      "meaning": "Risk was closed after remediation and evidence review.",
+      "next": []
+    },
+    {
+      "status": "reopened",
+      "meaning": "Risk was reopened after failed retest or new evidence.",
+      "next": ["investigating", "fixed"]
+    },
+    {
+      "status": "accepted_risk",
+      "meaning": "Risk was formally accepted for the lab scope.",
+      "next": ["reopened"]
+    },
+    {
+      "status": "false_positive",
+      "meaning": "Finding was reviewed and classified as not actionable.",
+      "next": ["reopened"]
+    }
+  ],
+  "default_owners": {
+    "prompt_injection": "ai-security",
+    "multi_turn_prompt_injection": "ai-security",
+    "jailbreak": "ai-security",
+    "unsafe_content": "ai-security",
+    "hallucination": "model-risk",
+    "rag_data_poisoning": "data-security",
+    "rag_citation_hallucination": "model-risk",
+    "privacy_leak": "data-security",
+    "data_exfiltration": "data-security",
+    "cross_user_data_leak": "data-security",
+    "tool_abuse": "platform-security",
+    "agent_toolchain_abuse": "platform-security",
+    "file_access_violation": "platform-security",
+    "database_query_violation": "data-security",
+    "context_cost_attack": "ai-platform",
+    "over_refusal": "model-risk",
+    "business_rule_bypass": "business-risk",
+    "baseline": "ai-platform"
+  },
+  "sla_days": {
+    "critical": 1,
+    "high": 7,
+    "medium": 14,
+    "low": 30
+  }
+}
